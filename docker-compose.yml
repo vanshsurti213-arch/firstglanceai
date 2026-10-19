@@ -1,0 +1,33 @@
+version: '3.8'
+
+services:
+  firstglance-gateway:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: firstglanceai:latest
+    container_name: firstglance-gateway
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      - NODE_ENV=production
+      - PORT=8080
+      - FG_MODEL_NAME=firstglance-v2-core
+      - REDIS_URL=redis://redis-cache:6379
+    depends_on:
+      - redis-cache
+    networks:
+      - fg-network
+
+  redis-cache:
+    image: redis:7-alpine
+    container_name: fg-redis-cache
+    ports:
+      - "6379:6379"
+    networks:
+      - fg-network
+
+networks:
+  fg-network:
+    driver: bridge
