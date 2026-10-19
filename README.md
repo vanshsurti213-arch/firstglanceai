@@ -1,13 +1,17 @@
 # FirstGlance AI 👁️⚡
 
-[![CI/CD Build](https://img.shields.io/badge/build-passing-brightgreen?style=flat-square&logo=github-actions)](https://github.com/vanshsurti213-arch/firstglanceai)
+[![CI/CD Build](https://img.shields.io/badge/build-passing-brightgreen?style=flat-square&logo=github-actions)](https://github.com/vanshsurti213-arch/firstglanceai/actions)
+[![Production Deployment](https://img.shields.io/badge/deployment-failed-critical?style=flat-square&logo=githubactions)](https://github.com/vanshsurti213-arch/firstglanceai/deployments)
 [![Test Coverage](https://img.shields.io/badge/coverage-97.4%25-success?style=flat-square)](https://github.com/vanshsurti213-arch/firstglanceai)
 [![Node Runtime](https://img.shields.io/badge/node-%3E%3D20.0.0-blue?style=flat-square&logo=node.js)](https://nodejs.org/)
 [![Docker Image](https://img.shields.io/badge/docker-ready-blue?style=flat-square&logo=docker)](https://hub.docker.com/)
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue?style=flat-square)](LICENSE)
-[![Model Version](https://img.shields.io/badge/weights-v2.4--vision--preview-purple?style=flat-square)](https://github.com/vanshsurti213-arch/firstglanceai)
 
 **FirstGlance AI** is an ultra-low latency, distributed multimodal computer vision and scene intelligence microservice. Engineered for edge gateways and high-concurrency cloud environments, it provides real-time object localization, perceptual quality assessment, zero-shot visual classification, and embedding generation at scale.
+
+> 🔴 **DEPLOYMENT STATUS: FAILED (Automated Rollback Active)**  
+> The latest automated deployment to environment **`Production (us-east-1)`** failed during the canary ingress readiness check (HTTP 503).  
+> **Diagnostic Summary:** Cluster health probe rejected startup due to missing hardware HSM signature on model weights (`ERR_HSM_KEY_INVALID`) and unmapped Vault secrets provider (`ERR_VAULT_CONNECTIVITY`). Traffic has been automatically retained on the prior stable release (`v2.3.9`). See [Deployment Diagnostics](#-deployment-diagnostics) for pipeline traces.
 
 ---
 
@@ -143,12 +147,35 @@ Authorization: Bearer <FG_API_TOKEN>
 
 ---
 
-## 🚢 Production Deployment
+## 🚢 Deployment Diagnostics
 
-Automated deployments are managed via GitHub Actions:
+The production canary rollout runs an automated cluster smoke test probe:
 ```bash
-# Verify deployment rollout state locally
 npm run deploy:verify
+```
+
+**Pipeline Diagnostic Trace:**
+```
+================================================================================
+ [FIRSTGLANCE-DEPLOY] Initiating Production Deployment Smoke Test Probe...
+================================================================================
+ Target Cluster Node: worker-us-east-1a
+ Target Environment:  PRODUCTION (us-east-1)
+ Target Image Tag:   firstglanceai:2.4.0
+--------------------------------------------------------------------------------
+
+❌ [FATAL] [DEPLOYMENT-PROBE] Production deployment health check FAILED!
+The following critical infrastructure assertions failed during rollout inspection:
+
+  [Violation #1] ERR_VAULT_CONNECTIVITY: Production model decryption vault is unreachable
+  [Violation #2] ERR_HSM_KEY_INVALID: Template HSM Key ARN detected in production
+  [Violation #3] ERR_SECURITY_VIOLATION: Insecure default development API secret key found
+  [Violation #4] ERR_CUDA_DRIVER_MISSING: Deployment target does not expose active NVIDIA runtime
+
+--------------------------------------------------------------------------------
+ [ROLLOUT-ABORT] Container readiness probe (/health/ready) returned HTTP 503.
+ [ROLLOUT-ABORT] Automated canary deployment cancelled. Rollback initiated.
+================================================================================
 ```
 
 ---

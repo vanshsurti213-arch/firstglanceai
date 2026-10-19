@@ -1,17 +1,16 @@
-name: FirstGlance CI/CD Pipeline
+name: Deploy to Production
 
 on:
   push:
     branches: [ main ]
-  pull_request:
-    branches: [ main ]
+  workflow_dispatch:
 
 jobs:
-  test:
-    name: Unit & Integration Tests
+  build-and-test:
+    name: Build & Test Suite
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout Repository
+      - name: Checkout Code
         uses: actions/checkout@v4
 
       - name: Setup Node.js Runtime
@@ -19,34 +18,24 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Execute Test Suite
+      - name: Run Test Suite
         run: npm test
-
-  quality:
-    name: Linter & Static Analysis
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js Runtime
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
 
       - name: Run Linter
         run: npm run lint
 
-      - name: Compile Model Graph
+      - name: Build Tensor Shaders
         run: npm run build
 
-  deploy:
-    name: Production Canary Deployment
-    needs: [test, quality]
+  deploy-production:
+    name: Production Deployment Rollout
+    needs: [build-and-test]
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
+    environment:
+      name: Production
+      url: https://api.firstglance.ai/v1
     steps:
-      - name: Checkout Repository
+      - name: Checkout Code
         uses: actions/checkout@v4
 
       - name: Setup Node.js Runtime
@@ -54,5 +43,7 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Verify Cluster Ingress & Deployment Health
-        run: npm run deploy:verify
+      - name: Deploy Container & Run Ingress Verification Probe
+        run: |
+          echo "🚀 Initiating production deployment rollout..."
+          npm run deploy:verify
